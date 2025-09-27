@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Expense Tracker — Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #f6fbff;
+      --card: #ffffff;
+      --text: #112;
+      --muted: #6b7280;
+      --accent-blue: #a9def9;
+      --accent-green: #c9f7d7;
+      --shadow: 0 8px 20px rgba(16,24,40,0.06);
+      --radius: 14px;
+      --btn-shadow: 0 8px 18px rgba(10,110,255,0.12);
+    }
+
+    #theme-dark:checked ~ .container { --bg:#0f172a; --card:#111827; --text:#e6eef8; --muted:#94a3b8; --accent-blue:#3b82f6; --accent-green:#06b6d4; --shadow:0 10px 30px rgba(2,6,23,0.6); --btn-shadow:0 10px 30px rgba(59,130,246,0.14); }
+    #theme-neon:checked ~ .container { --bg:#071424; --card:#08121f; --text:#e9fff8; --muted:#9ff0df; --accent-blue:#00d4ff; --accent-green:#00ffa6; --shadow:0 0 30px rgba(0,210,255,0.08); --btn-shadow:0 0 20px rgba(0,210,255,0.12); }
+
+    #currency-usd:checked ~ .container .amt.inr{display:none}
+    #currency-usd:checked ~ .container .amt.usd{display:inline}
+    #currency-inr:checked ~ .container .amt.usd{display:none}
+    #currency-inr:checked ~ .container .amt.inr{display:inline}
+
+    #show-warning:checked ~ .container #warning{display:block}
+    #show-warning:checked ~ .container #warning{animation:wiggle 800ms ease-in-out both}
+    @keyframes wiggle{0%{transform:scale(0.98)}50%{transform:scale(1.04)}100%{transform:scale(1)}}
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;font-family:'Poppins',system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;background:var(--bg);color:var(--text);padding:28px;transition:background .35s linear,color .35s linear}
+    .hidden-inputs{position:absolute;left:-9999px;top:-9999px;opacity:0;pointer-events:none}
+
+    .container{max-width:1100px;margin:0 auto}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .greet{display:flex;flex-direction:column}
+    .greet h1{margin:0;font-size:22px;font-weight:700;overflow:hidden;white-space:nowrap;border-right:2px solid var(--accent-blue);width:100%;animation:typing 2.2s steps(28) 0s 1}
+    @keyframes typing{from{width:0}to{width:100%}}
+    .greet p{margin-top:6px;color:var(--muted);font-size:13px}
+
+    .top-actions{display:flex;gap:10px;align-items:center}
+    .btn{background:var(--card);border:none;padding:10px 14px;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:var(--btn-shadow);transition:transform .15s ease,box-shadow .15s ease;color:var(--text)}
+    .btn:hover{transform:translateY(-3px)}
+    .btn.primary{background:linear-gradient(135deg,var(--accent-blue),var(--accent-green));color:#042; font-weight:700}
+
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:18px 0}
+    .card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .card h3{margin:0;font-size:14px;color:var(--muted)}
+    .big{font-size:20px;font-weight:700;margin-top:8px}
+    .amt{font-weight:700}
+    .progress{height:12px;background:linear-gradient(90deg,var(--accent-green),var(--accent-blue));border-radius:999px;overflow:hidden}
+    .progress .bar{height:100%;background:#ffd56b;width:0%}
+
+    #warning{display:none;margin-top:12px;text-align:center}
+    #warning img{max-width:100%;border-radius:10px;margin-top:8px;box-shadow:0 8px 30px rgba(0,0,0,0.25)}
+
+    .grid-2{display:grid;grid-template-columns:1fr 420px;gap:16px}
+    .chart-visual{height:160px;background:linear-gradient(180deg,rgba(0,0,0,0.02),transparent);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:700}
+    table{width:100%;border-collapse:collapse}
+    thead th{text-align:left;color:var(--muted);padding:8px}
+    tbody td{padding:10px 8px;border-top:1px solid rgba(0,0,0,0.06)}
+
+    .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,10,18,0.35);backdrop-filter:blur(3px);visibility:hidden;opacity:0;transform:translateY(8px);transition:all .22s ease}
+    .modal:target{visibility:visible;opacity:1;transform:none}
+    .modal-card{background:var(--card);padding:18px;border-radius:12px;min-width:320px;box-shadow:var(--shadow);color:var(--text)}
+    .form-row{margin-bottom:12px}
+    .label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    .radio-grid{display:flex;gap:8px}
+    .radio-grid label{background:var(--bg);padding:8px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.04);cursor:pointer}
+    .close-link{display:inline-block;margin-top:10px;padding:8px 10px;border-radius:8px;background:var(--card);text-decoration:none;color:var(--text);box-shadow:var(--btn-shadow)}
+
+    footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+
+    @media (max-width:920px){.cards{grid-template-columns:1fr}.grid-2{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+  <div class="hidden-inputs">
+    <input id="theme-light" type="radio" name="theme" checked>
+    <input id="theme-dark" type="radio" name="theme">
+    <input id="theme-neon" type="radio" name="theme">
+    <input id="currency-inr" type="radio" name="currency" checked>
+    <input id="currency-usd" type="radio" name="currency">
+    <input id="show-warning" type="checkbox">
+  </div>
+
+  <div class="container">
+    <header>
+      <div class="greet">
+        <h1>Hi Mithun, how are you?</h1>
+        <p>Welcome back — here's your money overview.</p>
+      </div>
+
+      <div class="top-actions">
+        <a href="#dashboard" class="btn">My Expenses This Month</a>
+        <a href="#settingsModal" class="btn">⚙️ Settings</a>
+        <a href="#addModal" class="btn primary">+ Add Expense</a>
+      </div>
+    </header>
+
+    <section class="cards">
+      <div class="card">
+        <h3>Current Balance</h3>
+        <div class="big amt">
+          <span class="amt inr">₹ 10,000</span>
+          <span class="amt usd" style="display:none">$125.00</span>
+        </div>
+        <p class="muted-small">Available to spend</p>
+      </div>
+
+      <div class="card">
+        <h3>Monthly Limit</h3>
+        <div class="big amt">
+          <span class="amt inr">₹ 1,000</span>
+          <span class="amt usd" style="display:none">$12.50</span>
+        </div>
+        <div style="margin-top:10px" class="progress"><div class="bar" style="width:12%"></div></div>
+        <div id="warning"><h2>⚠️ OVER LIMIT ⚠️</h2><img src="https://i.imgflip.com/30zz5g.jpg" alt="meme"></div>
+      </div>
+
+      <div class="card">
+        <h3>This Month</h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <div><div class="muted-small">Total Spent</div><div class="big amt"><span class="inr">₹ 0</span><span class="usd" style="display:none">$0.00</span></div></div>
+          <div style="text-align:right"><div class="muted-small">Remaining</div><div class="big amt"><span class="inr">₹ 10,000</span><span class="usd" style="display:none">$125.00</span></div></div>
+        </div>
+        <p id="friendlyMsg" class="muted-small">You are doing great! Keep it up!</p>
+      </div>
+    </section>
+
+    <hr style="border:none;height:1px;background:linear-gradient(90deg,transparent,#eee,transparent);margin:18px 0">
+
+    <section id="dashboard">
+      <div class="grid-2">
+        <div class="card">
+          <h3>Daily Expenses (This Month)</h3>
+          <div class="chart-visual">[ Bar chart placeholder ]</div>
+          <div style="margin-top:14px;display:flex;gap:12px;align-items:center">
+            <div style="flex:1">
+              <h4 style="margin:6px 0 8px 0;color:var(--muted)">Category Breakdown</h4>
+              <div class="chart-visual" style="height:110px">[ Pie chart placeholder ]</div>
+            </div>
+            <div style="width:160px;background:var(--card);padding:12px;border-radius:10px;box-shadow:var(--shadow)">
+              <div class="muted-small">Quick Summary</div>
+              <div style="margin-top:8px;font-weight:700" class="amt"><span class="inr">₹ 0</span><span class="usd" style="display:none">$0.00</span></div>
+              <div style="margin-top:10px" class="muted-small">Tip: Add small purchases to stay accurate.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="max-height:520px;overflow:auto">
+          <h3>Transactions</h3>
+          <table>
+            <thead><tr><th>Date</th><th>Item</th><th>Amount</th></tr></thead>
+            <tbody>
+              <tr><td>2025-09-10</td><td>Notebook</td><td class="amt"><span class="inr">₹ 150</span><span class="usd" style="display:none">$1.88</span></td></tr>
+              <tr><td>2025-09-12</td><td>Snacks</td><td class="amt"><span class="inr">₹ 80</span><span class="usd" style="display:none">$1.00</span></td></tr>
+              <tr><td>2025-09-20</td><td>Transport</td><td class="amt"><span class="inr">₹ 60</span><span class="usd" style="display:none">$0.75</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <footer>Made by 404</footer>
+  </div>
+
+  <div id="settingsModal" class="modal">
+    <div class="modal-card">
+      <h3>⚙️ Settings</h3>
+
+      <div class="form-row">
+        <div class="label">Theme</div>
+        <div class="radio-grid">
+          <label for="theme-light">Light</label>
+          <label for="theme-dark">Dark</label>
+          <label for="theme-neon">Neon</label>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="label">Currency</div>
+        <div class="radio-grid">
+          <label for="currency-inr">INR (₹)</label>
+          <label for="currency-usd">USD ($)</label>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="label">Simulate warning</div>
+        <div><label for="show-warning" style="cursor:pointer">Show Over-limit Warning</label></div>
+      </div>
+
+      <a href="#" class="close-link">Close</a>
+    </div>
+  </div>
+
+  <div id="addModal" class="modal">
+    <div class="modal-card">
+      <h3>Add Expense (static)</h3>
+      <div style="color:var(--muted);margin-bottom:12px">This is a static form (no JS). Use real add via server or JS integration later.</div>
+      <a href="#" class="close-link">Close</a>
+    </div>
+  </div>
+
+</body>
+</html>
